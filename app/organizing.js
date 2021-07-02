@@ -4,16 +4,16 @@ const path = require("path");
 class Organizing {
   startOrganizing(inputFolder, outputFolder, flag) {
     try {
-      this.#start(inputFolder, outputFolder);
+      this.start(inputFolder, outputFolder);
       console.log("Organizing done!");
 
-      this.#deletInputFolder(inputFolder, flag);
+      this.deleteInputFolder(inputFolder, flag);
     } catch (error) {
       throw new Error(error);
     }
   }
 
-  #start(inputFolder, outputFolder) {
+  start(inputFolder, outputFolder) {
     const files = fs.readdirSync(inputFolder);
 
     files.forEach((item) => {
@@ -21,7 +21,7 @@ class Organizing {
       const state = fs.statSync(localPath);
 
       if (state.isDirectory()) {
-        this.#start(localPath, outputFolder);
+        this.start(localPath, outputFolder);
       } else {
         if (!fs.existsSync(outputFolder)) {
           fs.mkdirSync(outputFolder);
@@ -44,16 +44,16 @@ class Organizing {
     });
   }
 
-  #deletInputFolder(inputFolder, flag) {
+  deleteInputFolder(inputFolder, flag) {
     if (flag !== "-d") {
       return;
     }
 
-    this.#delete(inputFolder);
+    this.delete(inputFolder);
     console.log("Delete done!");
   }
 
-  #delete(inputFolder) {
+  delete(inputFolder) {
     if (!fs.existsSync(inputFolder)) {
       return;
     }
@@ -63,13 +63,17 @@ class Organizing {
       const state = fs.statSync(localPath);
 
       if (state.isDirectory()) {
-        this.#delete(localPath);
+        this.delete(localPath);
       } else {
         fs.unlinkSync(localPath);
       }
     });
 
-    fs.rmdirSync(inputFolder);
+    fs.rmdirSync(inputFolder, (error) => {
+      if (error) {
+        throw new Error(error);
+      }
+    });
   }
 }
 
