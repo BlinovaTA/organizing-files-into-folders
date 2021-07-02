@@ -4,14 +4,16 @@ const path = require("path");
 class Organizing {
   startOrganizing(inputFolder, outputFolder, flag) {
     try {
-      this.#start(inputFolder, outputFolder, flag);
+      this.#start(inputFolder, outputFolder);
       console.log("Organizing done!");
+
+      this.#deletInputFolder(inputFolder, flag);
     } catch (error) {
       throw new Error(error);
     }
   }
 
-  #start(inputFolder, outputFolder, flag) {
+  #start(inputFolder, outputFolder) {
     const files = fs.readdirSync(inputFolder);
 
     files.forEach((item) => {
@@ -19,7 +21,7 @@ class Organizing {
       const state = fs.statSync(localPath);
 
       if (state.isDirectory()) {
-        this.#start(localPath, outputFolder, flag);
+        this.#start(localPath, outputFolder);
       } else {
         if (!fs.existsSync(outputFolder)) {
           fs.mkdirSync(outputFolder);
@@ -40,6 +42,34 @@ class Organizing {
         );
       }
     });
+  }
+
+  #deletInputFolder(inputFolder, flag) {
+    if (flag !== "-d") {
+      return;
+    }
+
+    this.#delete(inputFolder);
+    console.log("Delete done!");
+  }
+
+  #delete(inputFolder) {
+    if (!fs.existsSync(inputFolder)) {
+      return;
+    }
+
+    fs.readdirSync(inputFolder).forEach((item) => {
+      const localPath = path.join(inputFolder, item);
+      const state = fs.statSync(localPath);
+
+      if (state.isDirectory()) {
+        this.#delete(localPath);
+      } else {
+        fs.unlinkSync(localPath);
+      }
+    });
+
+    fs.rmdirSync(inputFolder);
   }
 }
 
