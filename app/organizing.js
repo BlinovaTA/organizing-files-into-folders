@@ -69,11 +69,7 @@ class Organizing {
       }
     });
 
-    fs.rmdirSync(inputFolder, (error) => {
-      if (error) {
-        throw new Error(error);
-      }
-    });
+    fs.rmdirSync(inputFolder);
   }
 }
 
