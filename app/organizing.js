@@ -1,76 +1,93 @@
 const fs = require("fs");
 const path = require("path");
 
-class Organizing {
-  startOrganizing(inputFolder, outputFolder, flag) {
-    try {
-      this.start(inputFolder, outputFolder);
-      console.log("Organizing done!");
+organizing = (inputFolder, outputFolder, flag) => {
+  start(inputFolder, outputFolder, flag);
+  console.log("Organizing done!");
+};
 
-      this.deleteInputFolder(inputFolder, flag);
-    } catch (error) {
+start = (inputFolder, outputFolder, flag) => {
+  fs.access(inputFolder, fs.constants.R_OK, (error) => {
+    if (error) {
+      throw new Error(`${inputFolder} is not readable`);
+    }
+
+    fs.readdir(inputFolder, (error, files) => {
+      if (error) {
+        throw new Error(error);
+      }
+
+      files.forEach((item) => {
+        const localPath = path.join(inputFolder, item);
+        fs.stat(localPath, (error, state) => {
+          if (error) {
+            throw new Error(error);
+          }
+
+          if (state.isDirectory()) {
+            start(localPath, outputFolder, flag);
+          } else {
+            fs.mkdir(outputFolder, { recursive: true }, (error) => {
+              if (error) {
+                throw new Error(error);
+              }
+
+              fs.mkdir(
+                path.join(outputFolder, item[0].toUpperCase()),
+                { recursive: true },
+                (error) => {
+                  if (error) {
+                    throw new Error(error);
+                  }
+
+                  if (flag === "-d") {
+                    fs.rename(
+                      localPath,
+                      path.join(outputFolder, item[0].toUpperCase(), item),
+                      (error) => {
+                        if (error) {
+                          throw new Error(error);
+                        } else {
+                          fs.readdir(inputFolder, function (error, files) {
+                            if (error) {
+                              throw new Error(error);
+                            } else {
+                              if (!files.length) {
+                                deleteInputFolder(inputFolder, flag);
+                              }
+                            }
+                          });
+                        }
+                      }
+                    );
+                  } else {
+                    fs.copyFile(
+                      localPath,
+                      path.join(outputFolder, item[0].toUpperCase(), item),
+                      (error) => {
+                        if (error) {
+                          throw new Error(error);
+                        }
+                      }
+                    );
+                  }
+                }
+              );
+            });
+          }
+        });
+      });
+    });
+  });
+};
+
+deleteInputFolder = (inputFolder) => {
+
+  fs.rm(inputFolder, { recursive: true }, (error) => {
+    if (error) {
       throw new Error(error);
     }
-  }
+  });
+};
 
-  start(inputFolder, outputFolder) {
-    const files = fs.readdirSync(inputFolder);
-
-    files.forEach((item) => {
-      const localPath = path.join(inputFolder, item);
-      const state = fs.statSync(localPath);
-
-      if (state.isDirectory()) {
-        this.start(localPath, outputFolder);
-      } else {
-        if (!fs.existsSync(outputFolder)) {
-          fs.mkdirSync(outputFolder);
-        }
-
-        if (!fs.existsSync(path.join(outputFolder, item[0].toUpperCase()))) {
-          fs.mkdirSync(path.join(outputFolder, item[0].toUpperCase()));
-        }
-
-        fs.link(
-          localPath,
-          path.join(outputFolder, item[0].toUpperCase(), item),
-          (error) => {
-            if (error) {
-              throw new Error(error);
-            }
-          }
-        );
-      }
-    });
-  }
-
-  deleteInputFolder(inputFolder, flag) {
-    if (flag !== "-d") {
-      return;
-    }
-
-    this.delete(inputFolder);
-    console.log("Delete done!");
-  }
-
-  delete(inputFolder) {
-    if (!fs.existsSync(inputFolder)) {
-      return;
-    }
-
-    fs.readdirSync(inputFolder).forEach((item) => {
-      const localPath = path.join(inputFolder, item);
-      const state = fs.statSync(localPath);
-
-      if (state.isDirectory()) {
-        this.delete(localPath);
-      } else {
-        fs.unlinkSync(localPath);
-      }
-    });
-
-    fs.rmdirSync(inputFolder);
-  }
-}
-
-module.exports = Organizing;
+module.exports = organizing;
