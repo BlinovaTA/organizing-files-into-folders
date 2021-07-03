@@ -3,7 +3,11 @@ const path = require("path");
 
 organizing = (inputFolder, outputFolder, flag) => {
   start(inputFolder, outputFolder, flag);
-  console.log("Organizing done!");
+
+  setTimeout(() => {
+    console.log("Organizing done!");
+    deleteInputFolder(inputFolder, flag);
+  }, 1000);
 };
 
 start = (inputFolder, outputFolder, flag) => {
@@ -47,16 +51,6 @@ start = (inputFolder, outputFolder, flag) => {
                       (error) => {
                         if (error) {
                           throw new Error(error);
-                        } else {
-                          fs.readdir(inputFolder, function (error, files) {
-                            if (error) {
-                              throw new Error(error);
-                            } else {
-                              if (!files.length) {
-                                deleteInputFolder(inputFolder, flag);
-                              }
-                            }
-                          });
                         }
                       }
                     );
@@ -81,7 +75,10 @@ start = (inputFolder, outputFolder, flag) => {
   });
 };
 
-deleteInputFolder = (inputFolder) => {
+deleteInputFolder = (inputFolder, flag) => {
+  if (flag !== "-d") {
+    return;
+  }
 
   fs.rm(inputFolder, { recursive: true }, (error) => {
     if (error) {
