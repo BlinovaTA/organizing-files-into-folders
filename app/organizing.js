@@ -1,90 +1,67 @@
+const fsPromises = require("fs/promises");
 const fs = require("fs");
 const path = require("path");
 
-organizing = (inputFolder, outputFolder, flag) => {
-  start(inputFolder, outputFolder, flag);
+const organizing = (inputFolder, outputFolder, flag) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await start(inputFolder, outputFolder, flag);
+      await deleteInputFolder(inputFolder, flag);
 
-  setTimeout(() => {
-    console.log("Organizing done!");
-    deleteInputFolder(inputFolder, flag);
-  }, 1000);
-};
-
-start = (inputFolder, outputFolder, flag) => {
-  fs.access(inputFolder, fs.constants.R_OK, (error) => {
-    if (error) {
-      throw new Error(`${inputFolder} is not readable`);
+      console.log("Organizing done!");
+      resolve();
+    } catch {
+      reject();
     }
-
-    fs.readdir(inputFolder, (error, files) => {
-      if (error) {
-        throw new Error(error);
-      }
-
-      files.forEach((item) => {
-        const localPath = path.join(inputFolder, item);
-        fs.stat(localPath, (error, state) => {
-          if (error) {
-            throw new Error(error);
-          }
-
-          if (state.isDirectory()) {
-            start(localPath, outputFolder, flag);
-          } else {
-            fs.mkdir(outputFolder, { recursive: true }, (error) => {
-              if (error) {
-                throw new Error(error);
-              }
-
-              fs.mkdir(
-                path.join(outputFolder, item[0].toUpperCase()),
-                { recursive: true },
-                (error) => {
-                  if (error) {
-                    throw new Error(error);
-                  }
-
-                  if (flag === "-d") {
-                    fs.rename(
-                      localPath,
-                      path.join(outputFolder, item[0].toUpperCase(), item),
-                      (error) => {
-                        if (error) {
-                          throw new Error(error);
-                        }
-                      }
-                    );
-                  } else {
-                    fs.copyFile(
-                      localPath,
-                      path.join(outputFolder, item[0].toUpperCase(), item),
-                      (error) => {
-                        if (error) {
-                          throw new Error(error);
-                        }
-                      }
-                    );
-                  }
-                }
-              );
-            });
-          }
-        });
-      });
-    });
   });
 };
 
-deleteInputFolder = (inputFolder, flag) => {
+const start = async (inputFolder, outputFolder, flag) => {
+  try {
+    await fsPromises.access(inputFolder, fs.constants.R_OK);
+
+    const files = await fsPromises.readdir(inputFolder);
+
+    files.forEach(async (item) => {
+      const localPath = path.normalize(path.join(inputFolder, item));
+      const state = await fsPromises.stat(localPath);
+
+      if (state.isDirectory()) {
+        start(localPath, outputFolder, flag);
+      } else {
+        await fsPromises.mkdir(outputFolder, { recursive: true });
+
+        await fsPromises.mkdir(
+          path.normalize(path.join(outputFolder, item[0].toUpperCase())),
+          {
+            recursive: true,
+          }
+        );
+
+        if (flag === "-d") {
+          await fsPromises.rename(
+            localPath,
+            path.normalize(path.join(outputFolder, item[0].toUpperCase(), item))
+          );
+        } else {
+          await fsPromises.copyFile(
+            localPath,
+            path.normalize(path.join(outputFolder, item[0].toUpperCase(), item))
+          );
+        }
+      }
+    });
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+const deleteInputFolder = async (inputFolder, flag) => {
   if (flag !== "-d") {
     return;
   }
 
-  fs.rm(inputFolder, { recursive: true }, (error) => {
-    if (error) {
-      throw new Error(error);
-    }
-  });
+  await fsPromises.rm(inputFolder, { recursive: true });
 };
 
 module.exports = organizing;
