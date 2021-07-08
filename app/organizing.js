@@ -2,11 +2,14 @@ const fsPromises = require("fs/promises");
 const fs = require("fs");
 const path = require("path");
 
-const organizing = (inputFolder, outputFolder, flag) => {
+const organizing = (config) => {
+  const { path, shouldDelete } = config;
+  const { input, output } = path;
+
   return new Promise(async (resolve, reject) => {
     try {
-      await start(inputFolder, outputFolder, flag);
-      await deleteInputFolder(inputFolder, flag);
+      await start(input, output, shouldDelete);
+      await deleteInputFolder(input, shouldDelete);
 
       console.log("Organizing done!");
       resolve();
@@ -38,16 +41,14 @@ const start = async (inputFolder, outputFolder, flag) => {
           }
         );
 
-        if (flag === "-d") {
-          await fsPromises.rename(
-            localPath,
-            path.normalize(path.join(outputFolder, item[0].toUpperCase(), item))
-          );
+        const outPath = path.normalize(
+          path.join(outputFolder, item[0].toUpperCase(), item)
+        );
+
+        if (flag) {
+          await fsPromises.rename(localPath, outPath);
         } else {
-          await fsPromises.copyFile(
-            localPath,
-            path.normalize(path.join(outputFolder, item[0].toUpperCase(), item))
-          );
+          await fsPromises.copyFile(localPath, outPath);
         }
       }
     });
@@ -57,7 +58,7 @@ const start = async (inputFolder, outputFolder, flag) => {
 };
 
 const deleteInputFolder = async (inputFolder, flag) => {
-  if (flag !== "-d") {
+  if (!flag) {
     return;
   }
 
